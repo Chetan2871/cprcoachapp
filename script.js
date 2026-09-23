@@ -61,15 +61,7 @@ for (let i = 0; i < imageContainers.length; i++) {
   // Add event listener to the child element whichis the img element.
   imageContainers[i].children[0].addEventListener("click", handleClick)
 }
-const myNumbers=[5,9,10,5];
-function avg(myNumbers){
-  let sum=0;
-  for(let i of myNumbers){
-    sum+=i;
-  }
-  return sum/(myNumbers.length);
-}
-console.log(avg(myNumbers));
+
 // When an image is clicked, let's detect it and display results!
 async function handleClick(event) {
   if (!poseLandmarker) {
