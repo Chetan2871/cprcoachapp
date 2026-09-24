@@ -61,7 +61,7 @@ for (let i = 0; i < imageContainers.length; i++) {
   // Add event listener to the child element whichis the img element.
   imageContainers[i].children[0].addEventListener("click", handleClick)
 }
-console.log(landmarks[15].y);
+
 const myNumbers=[5,9,10,5];
 function avg(myNumbers){
   let sum=0;
@@ -184,6 +184,7 @@ async function predictWebcam() {
       canvasCtx.save()
       canvasCtx.clearRect(0, 0, canvasElement.width, canvasElement.height)
       for (const landmark of result.landmarks) {
+        console.log(landmark[15].y);
         drawingUtils.drawLandmarks(landmark, {
           radius: data => DrawingUtils.lerp(data.from.z, -0.15, 0.1, 5, 1)
         })
