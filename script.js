@@ -61,6 +61,7 @@ for (let i = 0; i < imageContainers.length; i++) {
   // Add event listener to the child element whichis the img element.
   imageContainers[i].children[0].addEventListener("click", handleClick)
 }
+console.log(landmarks[15].y);
 const myNumbers=[5,9,10,5];
 function avg(myNumbers){
   let sum=0;
