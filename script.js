@@ -40,7 +40,7 @@ const createPoseLandmarker = async () => {
       delegate: "GPU"
     },
     runningMode: runningMode,
-    numPoses: 2
+    numPoses: 1
   })
   demosSection.classList.remove("invisible")
 }
@@ -127,6 +127,13 @@ const canvasElement = document.getElementById("output_canvas")
 const canvasCtx = canvasElement.getContext("2d")
 const drawingUtils = new DrawingUtils(canvasCtx)
 
+const videoFile = document.getElementById("videoFile")
+const uploadedVideo = document.getElementById("uploadedVideo")
+const videoCanvas = document.getElementById("videoCanvas")
+const videoCanvasCtx = videoCanvas.getContext("2d")
+const videoDrawingUtils = new DrawingUtils(videoCanvasCtx)
+const wristData = []
+
 // Check if webcam access is supported.
 const hasGetUserMedia = () => !!navigator.mediaDevices?.getUserMedia
 
@@ -138,6 +145,21 @@ if (hasGetUserMedia()) {
 } else {
   console.warn("getUserMedia() is not supported by your browser")
 }
+
+videoFile.addEventListener("change", (event) => {
+
+  const file = event.target.files[0]
+
+  if (!file) {
+    return
+  }
+
+  const videoURL = URL.createObjectURL(file)
+
+  uploadedVideo.src = videoURL
+
+  uploadedVideo.play()
+})
 
 // Enable the live webcam view and start detection.
 function enableCam(event) {
@@ -198,4 +220,66 @@ async function predictWebcam() {
   if (webcamRunning === true) {
     window.requestAnimationFrame(predictWebcam)
   }
+}
+
+let lastUploadedVideoTime = -1
+let uploadedLoopRunning = false
+
+uploadedVideo.addEventListener("play", () => {
+  if (!poseLandmarker) {
+    console.log("Model not loaded yet")
+    return
+  }
+  if (uploadedLoopRunning) return
+  uploadedLoopRunning = true
+  predictUploadedVideo()
+})
+uploadedVideo.addEventListener("loadedmetadata", () => {
+  videoCanvas.width = uploadedVideo.videoWidth
+  videoCanvas.height = uploadedVideo.videoHeight
+  console.log("intrinsic:", uploadedVideo.videoWidth, uploadedVideo.videoHeight)
+  console.log("displayed:", uploadedVideo.clientWidth, uploadedVideo.clientHeight)
+})
+uploadedVideo.addEventListener("ended", () => { uploadedLoopRunning = false })
+
+async function predictUploadedVideo() {
+  try {
+    if (runningMode === "IMAGE") {
+      runningMode = "VIDEO"
+      await poseLandmarker.setOptions({ runningMode: "VIDEO" })
+    }
+    // Only detect once the video has a decoded frame
+    if (
+      uploadedVideo.readyState >= 2 &&
+      uploadedVideo.videoWidth > 0 &&
+      lastUploadedVideoTime !== uploadedVideo.currentTime
+    ) {
+      lastUploadedVideoTime = uploadedVideo.currentTime
+      poseLandmarker.detectForVideo(uploadedVideo, uploadedVideo.currentTime * 1000, result => {
+        videoCanvasCtx.save()
+        videoCanvasCtx.clearRect(0, 0, videoCanvas.width, videoCanvas.height)
+        console.log("poses found:", result.landmarks.length)
+        for (const landmark of result.landmarks) {
+          console.log(landmark[15].y)
+          console.log(landmark[16].y)
+          videoDrawingUtils.drawLandmarks(landmark, {
+            radius: d => DrawingUtils.lerp(d.from.z, -0.15, 0.1, 5, 1)
+          })
+          videoDrawingUtils.drawConnectors(landmark, PoseLandmarker.POSE_CONNECTIONS)
+        }
+        videoCanvasCtx.restore()
+      })
+    }
+  } catch (err) {
+    console.error("Detection error:", err)
+  }
+  if (!uploadedVideo.paused && !uploadedVideo.ended) {
+  if (uploadedVideo.requestVideoFrameCallback) {
+    uploadedVideo.requestVideoFrameCallback(() => predictUploadedVideo())
+  } else {
+    window.requestAnimationFrame(predictUploadedVideo)
+  }
+} else {
+  uploadedLoopRunning = false
+}
 }

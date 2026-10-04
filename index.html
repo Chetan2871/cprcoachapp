@@ -27,7 +27,7 @@ limitations under the License. -->
       <img src="https://assets.codepen.io/9177687/woman-ge0f199f92_640.jpg" width="100%" crossorigin="anonymous" title="Click to get detection!" />
     </div>
     <div class="detectOnClick">
-      <!-- source: https://pixabay.com/photos/woman-relaxation-portrait-3053489/ -->
+      <!-- source: https://pixabay.com/photos/wRoman-relaxation-portrait-3053489/ -->
       <img src="https://assets.codepen.io/9177687/woman-g1af8d3deb_640.jpg" width="100%" crossorigin="anonymous" title="Click to get detection!" />
     </div>
 
@@ -43,7 +43,30 @@ limitations under the License. -->
         <video id="webcam" style="width: 1280px; height: 720px; position: abso" autoplay playsinline></video>
         <canvas class="output_canvas" id="output_canvas" width="1280" height="720" style="position: absolute; left: 0px; top: 0px;"></canvas>
       </div>
-    </div>
+      <h3>Video</h3>
+      <input type="file" id="videoFile" accept="video/*"/>
+      <div id="uploadedVideoContainer" style="position: relative; width: 1280px;">
+        <video
+          id="uploadedVideo"
+          width="1280"
+          autoplay
+          playsinline
+          controls
+          style="display: block; width: 100%; height: auto;"
+        ></video>
+
+        <canvas
+          id="videoCanvas"
+          style="
+            position: absolute;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+          "
+        ></canvas>
+      </div>
   </section>
   <script type="module" src="script.js"></script>
 </body>
