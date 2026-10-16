@@ -55,6 +55,69 @@ createPoseLandmarker()
 // CSS class 'detectionOnClick'. Lets get all the elements that have
 // this class.
 const imageContainers = document.getElementsByClassName("detectOnClick")
+const wrist15History = [];
+const wrist16History = [];
+const MAX_POINTS = 150;
+    const graphCanvas = document.getElementById("wristGraph");
+    const graphCtx = graphCanvas.getContext("2d");
+
+    function saveWristValue(history, value) {
+      history.push(value);
+
+      // remove oldest value when more than 150
+      if (history.length > MAX_POINTS) {
+        history.shift();
+      }
+    }
+
+    function drawLiveGraph() {
+      const values = [...wrist15History, ...wrist16History];
+      if (values.length < 2) return;
+
+      let minY = Math.min(...values);
+      let maxY = Math.max(...values);
+
+      if (maxY - minY < 0.005) {
+        minY -= 0.005;
+        maxY += 0.005;
+      }
+
+      const padding = (maxY - minY) * 0.1;
+      minY -= padding;
+      maxY += padding;
+
+      graphCtx.clearRect(
+        0, 0, graphCanvas.width, graphCanvas.height
+      );
+
+      function drawLine(history, color) {
+        if (history.length < 2) return;
+
+        graphCtx.beginPath();
+        graphCtx.strokeStyle = color;
+        graphCtx.lineWidth = 2;
+
+        history.forEach((value, index) => {
+          const x =
+            (index / (history.length - 1)) * graphCanvas.width;
+
+          const y =
+            ((value - minY) / (maxY - minY)) *
+            graphCanvas.height;
+
+          if (index === 0) {
+            graphCtx.moveTo(x, y);
+          } else {
+            graphCtx.lineTo(x, y);
+          }
+        });
+
+        graphCtx.stroke();
+      }
+
+      drawLine(wrist15History, "blue");
+      drawLine(wrist16History, "orange");
+    }
 
 // Now let's go through all of these and add a click event listener.
 for (let i = 0; i < imageContainers.length; i++) {
@@ -207,6 +270,11 @@ async function predictWebcam() {
       canvasCtx.clearRect(0, 0, canvasElement.width, canvasElement.height)
       for (const landmark of result.landmarks) {
         console.log(landmark[15].y);
+        saveWristValue(wrist15History, landmark[15].y);
+        saveWristValue(wrist16History, landmark[16].y);
+        let wristY = (landmark[15].y + landmark[16].y) / 2;
+        countCompression(wristY);
+        drawLiveGraph();
         drawingUtils.drawLandmarks(landmark, {
           radius: data => DrawingUtils.lerp(data.from.z, -0.15, 0.1, 5, 1)
         })
@@ -248,6 +316,9 @@ async function predictUploadedVideo() {
       runningMode = "VIDEO"
       await poseLandmarker.setOptions({ runningMode: "VIDEO" })
     }
+    
+
+
     // Only detect once the video has a decoded frame
     if (
       uploadedVideo.readyState >= 2 &&
@@ -260,8 +331,16 @@ async function predictUploadedVideo() {
         videoCanvasCtx.clearRect(0, 0, videoCanvas.width, videoCanvas.height)
         console.log("poses found:", result.landmarks.length)
         for (const landmark of result.landmarks) {
-          console.log(landmark[15].y)
-          console.log(landmark[16].y)
+          saveWristValue(wrist15History, landmark[15].y);
+          saveWristValue(wrist16History, landmark[16].y);
+          let wristY = (landmark[15].y + landmark[16].y) / 2;   
+          countCompression(wristY);
+          drawLiveGraph();
+          console.log(
+            "Graph samples:",
+            wrist15History.length,
+            wrist16History.length
+          );
           videoDrawingUtils.drawLandmarks(landmark, {
             radius: d => DrawingUtils.lerp(d.from.z, -0.15, 0.1, 5, 1)
           })
@@ -274,12 +353,46 @@ async function predictUploadedVideo() {
     console.error("Detection error:", err)
   }
   if (!uploadedVideo.paused && !uploadedVideo.ended) {
-  if (uploadedVideo.requestVideoFrameCallback) {
-    uploadedVideo.requestVideoFrameCallback(() => predictUploadedVideo())
+    if (uploadedVideo.requestVideoFrameCallback) {
+      uploadedVideo.requestVideoFrameCallback(() => predictUploadedVideo())
+    } else {
+      window.requestAnimationFrame(predictUploadedVideo)
+    }
   } else {
-    window.requestAnimationFrame(predictUploadedVideo)
+    uploadedLoopRunning = false
   }
-} else {
-  uploadedLoopRunning = false
 }
+let compression = 0;
+let topY = null;
+let bottomY = null;
+let movingDown = false;
+let lastCompressionTime=null;
+let rate=null;
+function countCompression(y) {
+  if (topY === null) topY = y;
+
+  if (!movingDown) {
+    topY = Math.min(topY, y);
+
+    if (y > topY + 0.025) {
+      movingDown = true;
+      bottomY = y;
+    }
+  } else {
+    bottomY = Math.max(bottomY, y);
+
+    if (y < bottomY - 0.025) {
+      compression++;
+      document.getElementById("compressionCount").textContent = compression;
+      const currentTime = Date.now();
+      if (lastCompressionTime!== null){
+        rate=60000/(currentTime-lastCompressionTime);
+        document.getElementById("compressionRate").textContent =
+         Math.round(rate);
+      }
+      lastCompressionTime = currentTime;
+      movingDown = false;
+      topY = y;
+    }
+  }
 }

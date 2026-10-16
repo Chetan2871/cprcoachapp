@@ -67,6 +67,28 @@ limitations under the License. -->
           "
         ></canvas>
       </div>
+      <div style="display: flex; flex-direction: column; align-items: flex-start; gap: 12px; margin-top: 12px;">
+
+        <canvas
+          id="wristGraph"
+          width="640"
+          height="140"
+          style="display: block; width: 100%; max-width: 640px; height: auto; border: 1px solid gray;"
+        ></canvas>
+
+        <p style="position: static; margin: 0;">
+          Blue = wrist 15 | Orange = wrist 16
+        </p>
+
+        <p style="position: static; margin: 0;">
+          Compressions: <span id="compressionCount">0</span>
+        </p>
+
+        <p style="position: static; margin: 0;">
+          Rate: <span id="compressionRate">--</span> compressions/min
+        </p>
+
+      </div>
   </section>
   <script type="module" src="script.js"></script>
 </body>
