@@ -270,11 +270,17 @@ async function predictWebcam() {
       canvasCtx.clearRect(0, 0, canvasElement.width, canvasElement.height)
       for (const landmark of result.landmarks) {
         console.log(landmark[15].y);
-        saveWristValue(wrist15History, landmark[15].y);
-        saveWristValue(wrist16History, landmark[16].y);
-        let wristY = (landmark[15].y + landmark[16].y) / 2;
-        countCompression(wristY);
-        drawLiveGraph();
+        if (wristsAreVisible(landmark)) {
+          saveWristValue(wrist15History, landmark[15].y);
+          saveWristValue(wrist16History, landmark[16].y);
+
+          let wristY = (landmark[15].y + landmark[16].y) / 2;
+
+          countCompression(wristY);
+          drawLiveGraph();
+        } else {
+          resetCompressionTracking();
+        }
         drawingUtils.drawLandmarks(landmark, {
           radius: data => DrawingUtils.lerp(data.from.z, -0.15, 0.1, 5, 1)
         })
@@ -331,11 +337,17 @@ async function predictUploadedVideo() {
         videoCanvasCtx.clearRect(0, 0, videoCanvas.width, videoCanvas.height)
         console.log("poses found:", result.landmarks.length)
         for (const landmark of result.landmarks) {
+        if (wristsAreVisible(landmark)) {
           saveWristValue(wrist15History, landmark[15].y);
           saveWristValue(wrist16History, landmark[16].y);
-          let wristY = (landmark[15].y + landmark[16].y) / 2;   
+
+          let wristY = (landmark[15].y + landmark[16].y) / 2;
+
           countCompression(wristY);
           drawLiveGraph();
+        } else {
+          resetCompressionTracking();
+        }
           console.log(
             "Graph samples:",
             wrist15History.length,
@@ -368,6 +380,26 @@ let bottomY = null;
 let movingDown = false;
 let lastCompressionTime=null;
 let rate=null;
+function wristsAreVisible(landmark) {
+  const left = landmark[15];
+  const right = landmark[16];
+
+  return [left, right].every(w =>
+    w &&
+    (w.visibility ?? 0) > 0.5 &&
+    w.x >= 0 && w.x <= 1 &&
+    w.y >= 0 && w.y <= 1
+  );
+}
+
+function resetCompressionTracking() {
+  topY = null;
+  bottomY = null;
+  movingDown = false;
+  lastCompressionTime = null;
+
+  document.getElementById("compressionRate").textContent = "--";
+}
 function countCompression(y) {
   if (topY === null) topY = y;
 
