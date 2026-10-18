@@ -437,15 +437,6 @@ function countCompression(y, fromWebcam = false) {
 
     if (y < bottomY - 0.025) {
       compression++;
-      const remaining = 30 - (compression % 30);
-
-      if (compression % 30 === 0) {
-        document.getElementById("breathCountdown").textContent =
-          "If trained, give 2 breaths now!";
-      } else {
-        document.getElementById("breathCountdown").textContent =
-          remaining + " compressions until the next cycle.";
-      }
       if (fromWebcam && webcamReminderTimer === null) {
         startWebcamReminderTimer();
       }
@@ -504,7 +495,7 @@ function startWebcamReminderTimer() {
 
   webcamReminderTimer = setInterval(
     playCompressionReminder,
-    2*60* 1000
+    10* 1000
   );
 }
 
