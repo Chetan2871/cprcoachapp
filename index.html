@@ -76,9 +76,13 @@ limitations under the License. -->
         <p style="position: static; margin: 0;">
           Rate: <span id="compressionRate">--</span> compressions/min
         </p>
+        <p id="rateFeedback" style="color: gray;">
+          Waiting for compression rate...
+        </p>
 
       </div>
   </section>
   <script type="module" src="script.js"></script>
+  <audio id="metronome" src="metronome.mp3" loop preload="auto"></audio>
 </body>
 </html>

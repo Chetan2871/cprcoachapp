@@ -191,7 +191,11 @@ const canvasCtx = canvasElement.getContext("2d")
 const drawingUtils = new DrawingUtils(canvasCtx)
 
 const videoFile = document.getElementById("videoFile")
-const uploadedVideo = document.getElementById("uploadedVideo")
+const uploadedVideo = document.getElementById("uploadedVideo");
+
+uploadedVideo.addEventListener("play", startMetronome);
+uploadedVideo.addEventListener("pause", stopMetronome);
+uploadedVideo.addEventListener("ended", stopMetronome);
 const videoCanvas = document.getElementById("videoCanvas")
 const videoCanvasCtx = videoCanvas.getContext("2d")
 const videoDrawingUtils = new DrawingUtils(videoCanvasCtx)
@@ -227,29 +231,46 @@ videoFile.addEventListener("change", (event) => {
 // Enable the live webcam view and start detection.
 function enableCam(event) {
   if (!poseLandmarker) {
-    console.log("Wait! poseLandmaker not loaded yet.")
-    return
+    console.log("Wait! poseLandmarker not loaded yet.");
+    return;
   }
 
   if (webcamRunning === true) {
-    webcamRunning = false
-    enableWebcamButton.innerText = "ENABLE PREDICTIONS"
-  } else {
-    webcamRunning = true
-    enableWebcamButton.innerText = "DISABLE PREDICTIONS"
-  }
+    webcamRunning = false;
+    stopMetronome();
 
-  // getUsermedia parameters.
+    if (video.srcObject) {
+      video.srcObject.getTracks().forEach(track => track.stop());
+      video.srcObject = null;
+    }
+
+    enableWebcamButton.innerText = "ENABLE PREDICTIONS";
+    return;
+  }
+    // getUsermedia parameters
   const constraints = {
     video: true
-  }
+  };
 
-  // Activate the webcam stream.
-  navigator.mediaDevices.getUserMedia(constraints).then(stream => {
-    video.srcObject = stream
-    video.addEventListener("loadeddata", predictWebcam)
-  })
+  navigator.mediaDevices.getUserMedia(constraints)
+    .then(stream => {
+      video.srcObject = stream;
+      webcamRunning = true;
+
+      enableWebcamButton.innerText = "DISABLE PREDICTIONS";
+      startMetronome();
+
+      video.addEventListener("loadeddata", predictWebcam, {
+        once: true
+      });
+    })
+    .catch(error => {
+      console.error("Could not access webcam:", error);
+      webcamRunning = false;
+      enableWebcamButton.innerText = "ENABLE PREDICTIONS";
+    });
 }
+
 
 let lastVideoTime = -1
 async function predictWebcam() {
@@ -421,6 +442,18 @@ function countCompression(y) {
         rate=60000/(currentTime-lastCompressionTime);
         document.getElementById("compressionRate").textContent =
          Math.round(rate);
+          const feedback = document.getElementById("rateFeedback");
+
+        if (rate < 100) {
+          feedback.textContent = "Push faster!";
+          feedback.style.color = "red";
+        } else if (rate > 120) {
+          feedback.textContent = "Slow down!";
+          feedback.style.color = "red";
+        } else {
+          feedback.textContent = "Rate is good!";
+          feedback.style.color = "blue";
+        }
       }
       lastCompressionTime = currentTime;
       movingDown = false;
@@ -428,3 +461,18 @@ function countCompression(y) {
     }
   }
 }
+function startMetronome() {
+  const sound = document.getElementById("metronome");
+  sound.currentTime = 0;
+
+  sound.play().catch(error => {
+    console.log("Could not play metronome:", error);
+  });
+}
+
+function stopMetronome() {
+  const sound = document.getElementById("metronome");
+  sound.pause();
+  sound.currentTime = 0;
+}
+
