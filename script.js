@@ -238,6 +238,7 @@ function enableCam(event) {
   if (webcamRunning === true) {
     webcamRunning = false;
     stopMetronome();
+    stopWebcamReminderTimer();
 
     if (video.srcObject) {
       video.srcObject.getTracks().forEach(track => track.stop());
@@ -297,7 +298,7 @@ async function predictWebcam() {
 
           let wristY = (landmark[15].y + landmark[16].y) / 2;
 
-          countCompression(wristY);
+          countCompression(wristY, true);
           drawLiveGraph();
         } else {
           resetCompressionTracking();
@@ -421,7 +422,7 @@ function resetCompressionTracking() {
 
   document.getElementById("compressionRate").textContent = "--";
 }
-function countCompression(y) {
+function countCompression(y, fromWebcam = false) {
   if (topY === null) topY = y;
 
   if (!movingDown) {
@@ -436,6 +437,9 @@ function countCompression(y) {
 
     if (y < bottomY - 0.025) {
       compression++;
+      if (fromWebcam && webcamReminderTimer === null) {
+        startWebcamReminderTimer();
+      }
       document.getElementById("compressionCount").textContent = compression;
       const currentTime = Date.now();
       if (lastCompressionTime!== null){
@@ -472,6 +476,37 @@ function startMetronome() {
 
 function stopMetronome() {
   const sound = document.getElementById("metronome");
+  sound.pause();
+  sound.currentTime = 0;
+}
+let webcamReminderTimer = null;
+
+function playCompressionReminder() {
+  const sound = document.getElementById("compressionReminder");
+  sound.currentTime = 0;
+
+  sound.play().catch(error => {
+    console.log("Could not play reminder:", error);
+  });
+}
+
+function startWebcamReminderTimer() {
+  if (webcamReminderTimer !== null) return;
+
+  webcamReminderTimer = setInterval(
+    playCompressionReminder,
+    2 * 60 * 1000
+  );
+}
+
+function stopWebcamReminderTimer() {
+  if (webcamReminderTimer !== null) {
+    clearInterval(webcamReminderTimer);
+  }
+
+  webcamReminderTimer = null;
+
+  const sound = document.getElementById("compressionReminder");
   sound.pause();
   sound.currentTime = 0;
 }
