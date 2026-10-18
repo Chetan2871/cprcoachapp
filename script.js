@@ -440,10 +440,10 @@ function countCompression(y, fromWebcam = false) {
       const remaining = 30 - (compression % 30);
 
       if (compression % 30 === 0) {
-        document.getElementById("breathReminder").textContent =
+        document.getElementById("breathCountdown").textContent =
           "If trained, give 2 breaths now!";
       } else {
-        document.getElementById("breathReminder").textContent =
+        document.getElementById("breathCountdown").textContent =
           remaining + " compressions until the next cycle.";
       }
       if (fromWebcam && webcamReminderTimer === null) {
