@@ -24,8 +24,7 @@ let poseLandmarker = undefined
 let runningMode = "IMAGE"
 let enableWebcamButton
 let webcamRunning = false
-const videoHeight = "360px"
-const videoWidth = "480px"
+
 
 // Before we can use PoseLandmarker class we must wait for it to finish
 // loading. Machine Learning models can be large and take a moment to
@@ -192,6 +191,19 @@ const drawingUtils = new DrawingUtils(canvasCtx)
 
 const videoFile = document.getElementById("videoFile")
 const uploadedVideo = document.getElementById("uploadedVideo");
+const uploadToggle = document.getElementById("uploadToggle");
+const uploadPanel = document.getElementById("uploadPanel");
+
+uploadToggle.addEventListener("click", () => {
+  uploadPanel.hidden = !uploadPanel.hidden;
+  uploadToggle.textContent = uploadPanel.hidden ? "Upload video" : "Hide video";
+
+  if (uploadPanel.hidden) {
+    uploadedVideo.pause();  
+  } else {
+    uploadPanel.scrollIntoView({ behavior: "smooth" });
+  }
+});
 
 uploadedVideo.addEventListener("play", startMetronome);
 uploadedVideo.addEventListener("pause", stopMetronome);
@@ -261,9 +273,11 @@ function enableCam(event) {
       enableWebcamButton.innerText = "DISABLE PREDICTIONS";
       startMetronome();
 
-      video.addEventListener("loadeddata", predictWebcam, {
-        once: true
-      });
+      video.addEventListener("loadeddata", () => {
+        canvasElement.width = video.videoWidth;
+        canvasElement.height = video.videoHeight;
+        predictWebcam();
+      }, { once: true });
     })
     .catch(error => {
       console.error("Could not access webcam:", error);
@@ -275,10 +289,7 @@ function enableCam(event) {
 
 let lastVideoTime = -1
 async function predictWebcam() {
-  canvasElement.style.height = videoHeight
-  video.style.height = videoHeight
-  canvasElement.style.width = videoWidth
-  video.style.width = videoWidth
+
   // Now let's start detecting the stream.
   if (runningMode === "IMAGE") {
     runningMode = "VIDEO"

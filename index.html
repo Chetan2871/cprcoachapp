@@ -1,92 +1,52 @@
-<!-- Copyright 2023 The MediaPipe Authors.
-
-Licensed under the Apache License, Version 2.0 (the "License");
-you may not use this file except in compliance with the License.
-You may obtain a copy of the License at
-
-     http://www.apache.org/licenses/LICENSE-2.0
-
-Unless required by applicable law or agreed to in writing, software
-distributed under the License is distributed on an "AS IS" BASIS,
-WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-See the License for the specific language governing permissions and
-limitations under the License. -->
-<link href="https://unpkg.com/material-components-web@latest/dist/material-components-web.min.css" rel="stylesheet">
-<script src="https://unpkg.com/material-components-web@latest/dist/material-components-web.min.js"></script>
-</script>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <!-- Without this, phones draw the page at desktop size and everything looks tiny -->
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>CPR Coach</title>
+  <link href="https://unpkg.com/material-components-web@latest/dist/material-components-web.min.css" rel="stylesheet">
+  <script src="https://unpkg.com/material-components-web@latest/dist/material-components-web.min.js"></script>
   <link rel="stylesheet" href="style.css">
+</head>
 <body>
-  <h1>Pose detection using the MediaPipe PoseLandmarker task</h1>
-
   <section id="demos" class="invisible">
 
-    <h2>Demo: Webcam continuous pose landmarks detection</h2>
-    <p>Stand in front of your webcam to get real-time pose landmarker detection.</br>Click <b>enable webcam</b> below and grant access to the webcam if prompted.</p>
-
-    <div id="liveView" class="videoView">
+    <div id="liveView" class="camera">
+      <video id="webcam" autoplay playsinline></video>
+      <canvas id="output_canvas" class="output_canvas"></canvas>
       <button id="webcamButton" class="mdc-button mdc-button--raised">
         <span class="mdc-button__ripple"></span>
         <span class="mdc-button__label">ENABLE WEBCAM</span>
       </button>
-      <div style="position: relative;">
-        <video id="webcam" style="width: 1280px; height: 720px; position: abso" autoplay playsinline></video>
-        <canvas class="output_canvas" id="output_canvas" width="1280" height="720" style="position: absolute; left: 0px; top: 0px;"></canvas>
+    </div>
+
+
+    <div id="dashboard">
+      <div class="stats">
+        <div class="stat"><span class="label">Compressions</span><span id="compressionCount" class="value">0</span></div>
+        <div class="stat"><span class="label">Rate /min</span><span id="compressionRate" class="value">--</span></div>
+        <div class="stat"><span class="label">Feedback</span><span id="rateFeedback" class="value small">Waiting...</span></div>
       </div>
-      <h3>Video</h3>
-      <input type="file" id="videoFile" accept="video/*"/>
-      <div id="uploadedVideoContainer" style="position: relative; width: 1280px;">
-        <video
-          id="uploadedVideo"
-          width="1280"
-          autoplay
-          playsinline
-          controls
-          style="display: block; width: 100%; height: auto;"
-        ></video>
-
-        <canvas
-          id="videoCanvas"
-          style="
-            position: absolute;
-            left: 0;
-            top: 0;
-            width: 100%;
-            height: 100%;
-            pointer-events: none;
-          "
-        ></canvas>
+      <p id="breathReminder">30 compressions until the next cycle.</p>
+      <canvas id="wristGraph" width="640" height="140"></canvas>
+      <div class="dash-footer">
+        <span><b class="blue">■</b> Wrist 15 &nbsp;<b class="orange">■</b> Wrist 16</span>
+        <button id="uploadToggle" type="button">Upload video</button>
       </div>
-      <div style="display: flex; flex-direction: column; align-items: flex-start; gap: 12px; margin-top: 12px;">
+    </div>
 
-        <canvas
-          id="wristGraph"
-          width="640"
-          height="140"
-          style="display: block; width: 100%; max-width: 640px; height: auto; border: 1px solid gray;"
-        ></canvas>
-
-        <p style="position: static; margin: 0;">
-          Blue = wrist 15 | Orange = wrist 16
-        </p>
-
-        <p style="position: static; margin: 0;">
-          Compressions: <span id="compressionCount">0</span>
-        </p>
-        <p id="breathReminder" style="position: static; margin: 0;">
-          30 compressions until the next cycle.
-        </p>
-
-        <p style="position: static; margin: 0;">
-          Rate: <span id="compressionRate">--</span> compressions/min
-        </p>
-        <p id="rateFeedback" style="color: gray;">
-          Waiting for compression rate...
-        </p>
-
+    <div id="uploadPanel" hidden>
+      <input type="file" id="videoFile" accept="video/*">
+      <div id="uploadedVideoContainer">
+        <video id="uploadedVideo" autoplay playsinline controls></video>
+        <canvas id="videoCanvas"></canvas>
       </div>
+    </div>
   </section>
-  <script type="module" src="script.js"></script>
+
   <audio id="metronome" src="metronome.mp3" loop preload="auto"></audio>
   <audio id="compressionReminder" src="reminder.mp3" preload="auto"></audio>
+  <script type="module" src="script.js"></script>
 </body>
 </html>
