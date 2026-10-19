@@ -507,7 +507,7 @@ function startWebcamReminderTimer() {
 
   webcamReminderTimer = setInterval(
     playCompressionReminder,
-    10* 1000
+    2*60* 1000
   );
 }
 
