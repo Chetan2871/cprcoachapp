@@ -435,14 +435,14 @@ function countCompression(y, fromWebcam = false) {
   if (!movingDown) {
     topY = Math.min(topY, y);
 
-    if (y > topY + 0.025) {
+    if (y > topY + getThreshold()) {
       movingDown = true;
       bottomY = y;
     }
   } else {
     bottomY = Math.max(bottomY, y);
 
-    if (y < bottomY - 0.025) {
+    if (y < bottomY - getThreshold()) {
       compression++;
       showDepth(bottomY - topY);
       const reminder = document.getElementById("breathReminder");
@@ -620,6 +620,12 @@ function showDepth(travel) {
   } else {
     el.textContent = "Good depth";
     el.style.color = "green";
+    function getThreshold() {
+      if (pixelsPerInch && frameHeight) {
+        return (0.7 * pixelsPerInch) / frameHeight;  
+      }
+      return 0.015;
+  }
   }
 }
 
