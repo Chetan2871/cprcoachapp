@@ -10,7 +10,31 @@
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
-  <section id="demos" class="invisible">
+  <div id="homeScreen" class="screen">
+    <h1>CPR Coach</h1>
+    <button id="emergencyBtn" class="big">EMERGENCY MODE</button>
+
+    <div class="card">
+      <label for="armInput">Arm length in inches (optional)<br>
+        <small>Shoulder bone to wrist bone. Turns on the depth gauge.</small></label>
+      <input id="armInput" type="number" inputmode="decimal" step="0.5" placeholder="e.g. 23">
+      <button id="saveArm">Save</button>
+      <p id="armStatus" class="small"></p>
+    </div>
+
+    <p class="small">Training aid, not a medical device. Call 911 first.</p>
+  </div>
+  <div id="placeScreen" class="screen" hidden>
+    <h2>Set up the phone</h2>
+    <ol>
+      <li>Call 911 and put it on speaker.</li>
+      <li>Put the phone about 3 ft to your side so it sees you from the side.</li>
+      <li>Whole body in frame, head to knees. Light in front of you.</li>
+    </ol>
+    <button id="startBtn" class="big">START</button>
+    <p class="small">Don't spend more than 10 seconds here. If alone, start pushing.</p>
+  </div>
+  <section id="demos" class="invisible" hidden>
 
     <div id="liveView" class="camera">
       <video id="webcam" autoplay playsinline></video>
@@ -24,9 +48,10 @@
 
     <div id="dashboard">
       <div class="stats">
-        <div class="stat"><span class="label">Compressions</span><span id="compressionCount" class="value">0</span></div>
+        <div class="stat"><span class="label">Compressions Count</span><span id="compressionCount" class="value">0</span></div>
         <div class="stat"><span class="label">Rate /min</span><span id="compressionRate" class="value">--</span></div>
         <div class="stat"><span class="label">Feedback</span><span id="rateFeedback" class="value small">Waiting...</span></div>
+        <div class="stat" id="depthBox" hidden><span class="label">Depth</span><span id="depthFeedback" class="value small">--</span></div>
       </div>
       <p id="breathReminder">30 compressions until the next cycle.</p>
       <canvas id="wristGraph" width="640" height="140"></canvas>

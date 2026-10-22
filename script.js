@@ -302,13 +302,13 @@ async function predictWebcam() {
       canvasCtx.save()
       canvasCtx.clearRect(0, 0, canvasElement.width, canvasElement.height)
       for (const landmark of result.landmarks) {
-        console.log(landmark[15].y);
+        
         if (wristsAreVisible(landmark)) {
           saveWristValue(wrist15History, landmark[15].y);
           saveWristValue(wrist16History, landmark[16].y);
 
           let wristY = (landmark[15].y + landmark[16].y) / 2;
-
+          updateScale(landmark, video);
           countCompression(wristY, true);
           drawLiveGraph();
         } else {
@@ -368,24 +368,19 @@ async function predictUploadedVideo() {
       poseLandmarker.detectForVideo(uploadedVideo, uploadedVideo.currentTime * 1000, result => {
         videoCanvasCtx.save()
         videoCanvasCtx.clearRect(0, 0, videoCanvas.width, videoCanvas.height)
-        console.log("poses found:", result.landmarks.length)
         for (const landmark of result.landmarks) {
         if (wristsAreVisible(landmark)) {
           saveWristValue(wrist15History, landmark[15].y);
           saveWristValue(wrist16History, landmark[16].y);
 
           let wristY = (landmark[15].y + landmark[16].y) / 2;
-
+          updateScale(landmark, uploadedVideo);
           countCompression(wristY);
           drawLiveGraph();
         } else {
           resetCompressionTracking();
         }
-          console.log(
-            "Graph samples:",
-            wrist15History.length,
-            wrist16History.length
-          );
+
           videoDrawingUtils.drawLandmarks(landmark, {
             radius: d => DrawingUtils.lerp(d.from.z, -0.15, 0.1, 5, 1)
           })
@@ -432,6 +427,7 @@ function resetCompressionTracking() {
   lastCompressionTime = null;
 
   document.getElementById("compressionRate").textContent = "--";
+    recentDepths.length = 0;
 }
 function countCompression(y, fromWebcam = false) {
   if (topY === null) topY = y;
@@ -448,6 +444,7 @@ function countCompression(y, fromWebcam = false) {
 
     if (y < bottomY - 0.025) {
       compression++;
+      showDepth(bottomY - topY);
       const reminder = document.getElementById("breathReminder");
 
       if (reminder) {
@@ -479,7 +476,7 @@ function countCompression(y, fromWebcam = false) {
           feedback.style.color = "red";
         } else {
           feedback.textContent = "Rate is good!";
-          feedback.style.color = "blue";
+          feedback.style.color = "green";
         }
       }
       lastCompressionTime = currentTime;
@@ -532,5 +529,97 @@ function stopWebcamReminderTimer() {
   const sound = document.getElementById("compressionReminder");
   sound.pause();
   sound.currentTime = 0;
+}
+
+let armLength = null;
+try { armLength = parseFloat(localStorage.getItem("armLengthIn")) || null; } catch (e) {}
+
+const armInput = document.getElementById("armInput");
+const armStatus = document.getElementById("armStatus");
+const depthBox = document.getElementById("depthBox");
+
+function showArm() {
+  armStatus.textContent = armLength
+    ? "Saved: " + armLength + " in. Depth gauge is on."
+    : "Not set. Everything works, just without the depth gauge.";
+  depthBox.hidden = !armLength;
+  if (armLength) armInput.value = armLength;
+}
+showArm();
+
+document.getElementById("saveArm").addEventListener("click", () => {
+  const value = parseFloat(armInput.value);
+  if (armInput.value === "") {
+    armLength = null;                       
+  } else if (value >= 15 && value <= 32) {
+    armLength = value;
+  } else {
+    armStatus.textContent = "Enter a number from 15 to 32.";
+    return;
+  }
+  try {
+    if (armLength) localStorage.setItem("armLengthIn", armLength);
+    else localStorage.removeItem("armLengthIn");
+  } catch (e) {}
+  showArm();
+});
+
+
+document.getElementById("emergencyBtn").addEventListener("click", () => {
+  document.getElementById("homeScreen").hidden = true;
+  document.getElementById("placeScreen").hidden = false;
+});
+
+document.getElementById("startBtn").addEventListener("click", () => {
+  document.getElementById("placeScreen").hidden = true;
+  demosSection.hidden = false;
+  enableCam();                               
+});
+
+let pixelsPerInch = null;
+let frameHeight = null;
+const armHistory = [];
+const recentDepths = [];
+
+function updateScale(landmark, videoEl) {
+  if (!armLength) return;
+
+  const leftVis = (landmark[11].visibility ?? 0) + (landmark[15].visibility ?? 0);
+  const rightVis = (landmark[12].visibility ?? 0) + (landmark[16].visibility ?? 0);
+  const shoulder = leftVis > rightVis ? landmark[11] : landmark[12];
+  const wrist = leftVis > rightVis ? landmark[15] : landmark[16];
+
+
+  const armPx = Math.hypot(
+    (shoulder.x - wrist.x) * videoEl.videoWidth,
+    (shoulder.y - wrist.y) * videoEl.videoHeight
+  );
+
+  armHistory.push(armPx);
+  if (armHistory.length > 90) armHistory.shift();   // about the last 3 seconds
+
+  pixelsPerInch = Math.max(...armHistory) / armLength;
+  frameHeight = videoEl.videoHeight;
+}
+
+
+function showDepth(travel) {
+  if (!armLength || !pixelsPerInch) return;
+
+  recentDepths.push((travel * frameHeight) / pixelsPerInch);
+  if (recentDepths.length > 3) recentDepths.shift();
+  const average = recentDepths.reduce((a, b) => a + b, 0) / recentDepths.length;
+
+  const el = document.getElementById("depthFeedback");
+  if (average < 1.8) {
+    el.textContent = "Push harder";
+    el.style.color = "red";
+  } else if (average > 2.6) {
+    el.textContent = "Ease up";
+    el.style.color = "orange";
+  } else {
+    el.textContent = "Good depth";
+    el.style.color = "green";
+  }
 }
 
