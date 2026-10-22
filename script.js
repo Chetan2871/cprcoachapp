@@ -620,12 +620,12 @@ function showDepth(travel) {
   } else {
     el.textContent = "Good depth";
     el.style.color = "green";
-    function getThreshold() {
-      if (pixelsPerInch && frameHeight) {
-        return (0.7 * pixelsPerInch) / frameHeight;  
-      }
-      return 0.015;
-  }
   }
 }
 
+function getThreshold() {
+  if (pixelsPerInch && frameHeight) {
+    return (0.7 * pixelsPerInch) / frameHeight;
+  }
+  return 0.015;
+}
