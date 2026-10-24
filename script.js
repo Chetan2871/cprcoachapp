@@ -153,7 +153,7 @@ function enableCam(event) {
       video.srcObject = null;
     }
 
-    enableWebcamButton.innerText = "ENABLE CAMERA";
+    enableWebcamButton.innerText = "START CAMERA";
     return;
   }
     // getUsermedia parameters
@@ -166,7 +166,7 @@ function enableCam(event) {
       video.srcObject = stream;
       webcamRunning = true;
 
-      enableWebcamButton.innerText = "DISABLE PREDICTIONS";
+      enableWebcamButton.innerText = "STOP";
       startMetronome();
 
       video.addEventListener("loadeddata", () => {
@@ -178,7 +178,7 @@ function enableCam(event) {
     .catch(error => {
       console.error("Could not access webcam:", error);
       webcamRunning = false;
-      enableWebcamButton.innerText = "ENABLE PREDICTIONS";
+      enableWebcamButton.innerText = "START CAMERA";
     });
 }
 
