@@ -54,69 +54,6 @@ createPoseLandmarker()
 // CSS class 'detectionOnClick'. Lets get all the elements that have
 // this class.
 const imageContainers = document.getElementsByClassName("detectOnClick")
-const wrist15History = [];
-const wrist16History = [];
-const MAX_POINTS = 150;
-    const graphCanvas = document.getElementById("wristGraph");
-    const graphCtx = graphCanvas.getContext("2d");
-
-    function saveWristValue(history, value) {
-      history.push(value);
-
-      // remove oldest value when more than 150
-      if (history.length > MAX_POINTS) {
-        history.shift();
-      }
-    }
-
-    function drawLiveGraph() {
-      const values = [...wrist15History, ...wrist16History];
-      if (values.length < 2) return;
-
-      let minY = Math.min(...values);
-      let maxY = Math.max(...values);
-
-      if (maxY - minY < 0.005) {
-        minY -= 0.005;
-        maxY += 0.005;
-      }
-
-      const padding = (maxY - minY) * 0.1;
-      minY -= padding;
-      maxY += padding;
-
-      graphCtx.clearRect(
-        0, 0, graphCanvas.width, graphCanvas.height
-      );
-
-      function drawLine(history, color) {
-        if (history.length < 2) return;
-
-        graphCtx.beginPath();
-        graphCtx.strokeStyle = color;
-        graphCtx.lineWidth = 2;
-
-        history.forEach((value, index) => {
-          const x =
-            (index / (history.length - 1)) * graphCanvas.width;
-
-          const y =
-            ((value - minY) / (maxY - minY)) *
-            graphCanvas.height;
-
-          if (index === 0) {
-            graphCtx.moveTo(x, y);
-          } else {
-            graphCtx.lineTo(x, y);
-          }
-        });
-
-        graphCtx.stroke();
-      }
-
-      drawLine(wrist15History, "blue");
-      drawLine(wrist16History, "orange");
-    }
 
 // Now let's go through all of these and add a click event listener.
 for (let i = 0; i < imageContainers.length; i++) {
@@ -151,8 +88,6 @@ async function handleClick(event) {
     n.parentNode.removeChild(n)
   }
 
-  // We can call poseLandmarker.detect as many times as we like with
-  // different image data each time. The result is returned in a callback.
   poseLandmarker.detect(event.target, result => {
     const canvas = document.createElement("canvas")
     canvas.setAttribute("class", "canvas")
@@ -189,30 +124,6 @@ const canvasElement = document.getElementById("output_canvas")
 const canvasCtx = canvasElement.getContext("2d")
 const drawingUtils = new DrawingUtils(canvasCtx)
 
-const videoFile = document.getElementById("videoFile")
-const uploadedVideo = document.getElementById("uploadedVideo");
-const uploadToggle = document.getElementById("uploadToggle");
-const uploadPanel = document.getElementById("uploadPanel");
-
-uploadToggle.addEventListener("click", () => {
-  uploadPanel.hidden = !uploadPanel.hidden;
-  uploadToggle.textContent = uploadPanel.hidden ? "Upload video" : "Hide video";
-
-  if (uploadPanel.hidden) {
-    uploadedVideo.pause();  
-  } else {
-    uploadPanel.scrollIntoView({ behavior: "smooth" });
-  }
-});
-
-uploadedVideo.addEventListener("play", startMetronome);
-uploadedVideo.addEventListener("pause", stopMetronome);
-uploadedVideo.addEventListener("ended", stopMetronome);
-const videoCanvas = document.getElementById("videoCanvas")
-const videoCanvasCtx = videoCanvas.getContext("2d")
-const videoDrawingUtils = new DrawingUtils(videoCanvasCtx)
-const wristData = []
-
 // Check if webcam access is supported.
 const hasGetUserMedia = () => !!navigator.mediaDevices?.getUserMedia
 
@@ -224,21 +135,6 @@ if (hasGetUserMedia()) {
 } else {
   console.warn("getUserMedia() is not supported by your browser")
 }
-
-videoFile.addEventListener("change", (event) => {
-
-  const file = event.target.files[0]
-
-  if (!file) {
-    return
-  }
-
-  const videoURL = URL.createObjectURL(file)
-
-  uploadedVideo.src = videoURL
-
-  uploadedVideo.play()
-})
 
 // Enable the live webcam view and start detection.
 function enableCam(event) {
@@ -257,7 +153,7 @@ function enableCam(event) {
       video.srcObject = null;
     }
 
-    enableWebcamButton.innerText = "ENABLE PREDICTIONS";
+    enableWebcamButton.innerText = "ENABLE CAMERA";
     return;
   }
     // getUsermedia parameters
@@ -304,13 +200,9 @@ async function predictWebcam() {
       for (const landmark of result.landmarks) {
         
         if (wristsAreVisible(landmark)) {
-          saveWristValue(wrist15History, landmark[15].y);
-          saveWristValue(wrist16History, landmark[16].y);
-
           let wristY = (landmark[15].y + landmark[16].y) / 2;
           updateScale(landmark, video);
           countCompression(wristY, true);
-          drawLiveGraph();
         } else {
           resetCompressionTracking();
         }
@@ -329,79 +221,6 @@ async function predictWebcam() {
   }
 }
 
-let lastUploadedVideoTime = -1
-let uploadedLoopRunning = false
-
-uploadedVideo.addEventListener("play", () => {
-  if (!poseLandmarker) {
-    console.log("Model not loaded yet")
-    return
-  }
-  if (uploadedLoopRunning) return
-  uploadedLoopRunning = true
-  predictUploadedVideo()
-})
-uploadedVideo.addEventListener("loadedmetadata", () => {
-  videoCanvas.width = uploadedVideo.videoWidth
-  videoCanvas.height = uploadedVideo.videoHeight
-  console.log("intrinsic:", uploadedVideo.videoWidth, uploadedVideo.videoHeight)
-  console.log("displayed:", uploadedVideo.clientWidth, uploadedVideo.clientHeight)
-})
-uploadedVideo.addEventListener("ended", () => { uploadedLoopRunning = false })
-
-async function predictUploadedVideo() {
-  try {
-    if (runningMode === "IMAGE") {
-      runningMode = "VIDEO"
-      await poseLandmarker.setOptions({ runningMode: "VIDEO" })
-    }
-    
-
-
-    // Only detect once the video has a decoded frame
-    if (
-      uploadedVideo.readyState >= 2 &&
-      uploadedVideo.videoWidth > 0 &&
-      lastUploadedVideoTime !== uploadedVideo.currentTime
-    ) {
-      lastUploadedVideoTime = uploadedVideo.currentTime
-      poseLandmarker.detectForVideo(uploadedVideo, uploadedVideo.currentTime * 1000, result => {
-        videoCanvasCtx.save()
-        videoCanvasCtx.clearRect(0, 0, videoCanvas.width, videoCanvas.height)
-        for (const landmark of result.landmarks) {
-        if (wristsAreVisible(landmark)) {
-          saveWristValue(wrist15History, landmark[15].y);
-          saveWristValue(wrist16History, landmark[16].y);
-
-          let wristY = (landmark[15].y + landmark[16].y) / 2;
-          updateScale(landmark, uploadedVideo);
-          countCompression(wristY);
-          drawLiveGraph();
-        } else {
-          resetCompressionTracking();
-        }
-
-          videoDrawingUtils.drawLandmarks(landmark, {
-            radius: d => DrawingUtils.lerp(d.from.z, -0.15, 0.1, 5, 1)
-          })
-          videoDrawingUtils.drawConnectors(landmark, PoseLandmarker.POSE_CONNECTIONS)
-        }
-        videoCanvasCtx.restore()
-      })
-    }
-  } catch (err) {
-    console.error("Detection error:", err)
-  }
-  if (!uploadedVideo.paused && !uploadedVideo.ended) {
-    if (uploadedVideo.requestVideoFrameCallback) {
-      uploadedVideo.requestVideoFrameCallback(() => predictUploadedVideo())
-    } else {
-      window.requestAnimationFrame(predictUploadedVideo)
-    }
-  } else {
-    uploadedLoopRunning = false
-  }
-}
 let compression = 0;
 let topY = null;
 let bottomY = null;
