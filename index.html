@@ -69,7 +69,11 @@
       </div>
     </div>
   </section>
-
+  <div id="summaryScreen" class="screen" hidden>
+  <h2>Session summary</h2>
+  <p id="summaryText" style="white-space: pre-line; font-size: 20px;"></p>
+  <button class="big" onclick="location.reload()">DONE</button>
+</div>
   <audio id="metronome" src="metronome.mp3" loop preload="auto"></audio>
   <audio id="compressionReminder" src="reminder.mp3" preload="auto"></audio>
   <script type="module" src="script.js"></script>

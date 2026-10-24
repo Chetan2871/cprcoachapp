@@ -251,7 +251,7 @@ function enableCam(event) {
     webcamRunning = false;
     stopMetronome();
     stopWebcamReminderTimer();
-
+    showSummary();
     if (video.srcObject) {
       video.srcObject.getTracks().forEach(track => track.stop());
       video.srcObject = null;
@@ -444,6 +444,7 @@ function countCompression(y, fromWebcam = false) {
 
     if (y < bottomY - getThreshold()) {
       compression++;
+      if (startTime === null) startTime = Date.now();
       showDepth(bottomY - topY);
       const reminder = document.getElementById("breathReminder");
 
@@ -464,6 +465,7 @@ function countCompression(y, fromWebcam = false) {
       const currentTime = Date.now();
       if (lastCompressionTime!== null){
         rate=60000/(currentTime-lastCompressionTime);
+        rateCount++;
         document.getElementById("compressionRate").textContent =
          Math.round(rate);
           const feedback = document.getElementById("rateFeedback");
@@ -477,6 +479,7 @@ function countCompression(y, fromWebcam = false) {
         } else {
           feedback.textContent = "Rate is good!";
           feedback.style.color = "green";
+          goodRate++;
         }
       }
       lastCompressionTime = currentTime;
@@ -620,6 +623,7 @@ function showDepth(travel) {
   } else {
     el.textContent = "Good depth";
     el.style.color = "green";
+    goodDepth++;  
   }
 }
 
@@ -628,4 +632,21 @@ function getThreshold() {
     return (0.7 * pixelsPerInch) / frameHeight;
   }
   return 0.015;
+}
+function keepScreenOn() { navigator.wakeLock?.request("screen").catch(() => {}); }
+document.addEventListener("click", keepScreenOn);
+document.addEventListener("visibilitychange", keepScreenOn);
+let goodRate = 0, rateCount = 0, goodDepth = 0, startTime = null;
+function showSummary() {
+  if (compression === 0) return;
+  const secs = Math.round((Date.now() - startTime) / 1000);
+  let text = "Compressions: " + compression +
+    "\nTime: " + secs + " seconds" +
+    "\nGood rate: " + Math.round(100 * goodRate / Math.max(rateCount, 1)) + "%";
+  if (armLength) {
+    text += "\nGood depth: " + Math.round(100 * goodDepth / compression) + "%";
+  }
+  document.getElementById("summaryText").textContent = text;
+  demosSection.hidden = true;
+  document.getElementById("summaryScreen").hidden = false;
 }
